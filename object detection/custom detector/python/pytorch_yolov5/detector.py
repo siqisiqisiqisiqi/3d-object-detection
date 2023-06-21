@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import numpy as np
 
 import argparse
@@ -8,13 +9,13 @@ import torch
 import cv2
 import pyzed.sl as sl
 import torch.backends.cudnn as cudnn
-
-sys.path.insert(0, './object detection/custom detector/python/pytorch_yolov5/yolov5')
-from models.experimental import attempt_load
-from utils.general import check_img_size
-from utils.general import non_max_suppression, scale_coords, xyxy2xywh
-from utils.torch_utils import select_device
-from utils.augmentations import letterbox
+current = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, f'{current}/yolov5')
+from yolov5.models.experimental import attempt_load
+from yolov5.utils.general import check_img_size
+from yolov5.utils.general import non_max_suppression, scale_coords, xyxy2xywh
+from yolov5.utils.torch_utils import select_device
+from yolov5.utils.augmentations import letterbox
 
 from threading import Lock, Thread
 from time import sleep
@@ -149,6 +150,7 @@ def main():
     init_params.depth_maximum_distance = 50
 
     runtime_params = sl.RuntimeParameters()
+    runtime_params.measure3D_reference_frame = sl.REFERENCE_FRAME.WORLD
     status = zed.open(init_params)
 
     if status != sl.ERROR_CODE.SUCCESS:
@@ -219,6 +221,14 @@ def main():
             lock.release()
             zed.retrieve_objects(objects, obj_runtime_param)
 
+            # Retrieve the object information
+            bbox_3d_info = []
+            bbox_3d_points = []
+            for object in objects.object_list:
+                bbox_3d_info.append([object.label, object.position, object.dimensions])
+                bbox_3d_points.append(object.bounding_box)
+                print(f"ID: {object.id}, Position: {object.position}, Dimension: {object.dimensions}")
+
             # -- Display
             # Retrieve display data
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, point_cloud_res)
@@ -252,8 +262,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='./weights/best2.pt', help='model.pt path(s)')
     # parser.add_argument('--weights', nargs='+', type=str, default='./weights/yolov5s.pt', help='model.pt path(s)')
-    parser.add_argument('--svo', type=str, default="../svo_data/j-turn_obstacle_avoidance.svo", help='optional svo file')
-    # parser.add_argument('--svo', type=str, default=None, help='optional svo file')
+    # parser.add_argument('--svo', type=str, default="../svo_data/j-turn_obstacle_avoidance.svo", help='optional svo file')
+    parser.add_argument('--svo', type=str, default=None, help='optional svo file')
     parser.add_argument('--img_size', type=int, default=416, help='inference size (pixels)')
     parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
     opt = parser.parse_args()
