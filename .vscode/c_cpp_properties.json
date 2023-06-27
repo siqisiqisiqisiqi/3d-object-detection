@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/opt/ros/noetic/include/**",
+        "/home/tongshen/Projects/AuE8230Spring23_Tongshen/catkin_ws/src/apriltag_ros/apriltag_ros/include/**",
+        "/home/tongshen/Projects/AuE8230Spring23_Tongshen/catkin_ws/src/assignment3a_wallfollowingandobstacleavoidance/include/**",
+        "/home/tongshen/Projects/AuE8230Spring23_Tongshen/catkin_ws/src/auefinals/include/**",
+        "/home/tongshen/Projects/AuE8230Spring23_Tongshen/catkin_ws/src/turtlebot3_simulations/turtlebot3_fake/include/**",
+        "/home/tongshen/Projects/AuE8230Spring23_Tongshen/catkin_ws/src/turtlebot3_simulations/turtlebot3_gazebo/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
