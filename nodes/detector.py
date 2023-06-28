@@ -10,7 +10,7 @@ sys.path.insert(1, parent)
 
 import numpy as np
 import rospy
-from object_detection.msg import bounding_box_3d
+from object_detection.msg import BBox3d, Detection
 import argparse
 import torch
 import cv2
@@ -208,9 +208,11 @@ def main():
     cam_w_pose = sl.Pose()
 
     # Store the bounding box info
-    bbox = bounding_box_3d()
+    detection = Detection()
+    detection.header.frame_id = 'odom'
+    detection.header.seq = 10
     rospy.init_node('bounding_box', anonymous=True)
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(1)
 
     while viewer.is_available() and not exit_signal:
         if zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
@@ -234,6 +236,7 @@ def main():
 
             # Retrieve the object information
             for object in objects.object_list:
+                bbox = BBox3d()
                 point_a = object.bounding_box[4]
                 point_b = object.bounding_box[7]
                 dx = point_a[0] - point_b[0]
@@ -244,12 +247,13 @@ def main():
                 bbox.x2, bbox.y2 = object.bounding_box[6][0], object.bounding_box[6][1]
                 bbox.width, bbox.length = object.dimensions[0], object.dimensions[2]
                 bbox.yaw = yaw
+                detection.header.stamp = rospy.get_rostime()
+                detection.bbox_3d.append(bbox)
 
             # Publish the 3d bounding box
-            pose_pub = rospy.Publisher('bounding_box', bbox, queue_size=10)
-            while not rospy.is_shutdown():
-                pose_pub.publish(bbox)
-                rate.sleep()
+            pose_pub = rospy.Publisher('bounding_box', Detection, queue_size=10)
+            pose_pub.publish(detection)
+            rate.sleep()
 
             # -- Display
             # Retrieve display data
