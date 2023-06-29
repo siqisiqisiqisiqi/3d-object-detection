@@ -1,7 +1,5 @@
-float32 x1
-float32 y1
-float32 x2
-float32 y2
+float32 x_center
+float32 y_center
 float32 width
 float32 length
 float32 yaw

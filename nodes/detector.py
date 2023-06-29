@@ -156,7 +156,7 @@ def main():
     init_params.depth_maximum_distance = 50
 
     runtime_params = sl.RuntimeParameters()
-    runtime_params.measure3D_reference_frame = sl.REFERENCE_FRAME.WORLD
+    runtime_params.measure3D_reference_frame = sl.REFERENCE_FRAME.CAMERA
     status = zed.open(init_params)
 
     if status != sl.ERROR_CODE.SUCCESS:
@@ -167,14 +167,14 @@ def main():
 
     print("Initialized Camera")
 
-    positional_tracking_parameters = sl.PositionalTrackingParameters()
-    # If the camera is static, uncomment the following line to have better performances and boxes sticked to the ground.
-    # positional_tracking_parameters.set_as_static = True
-    zed.enable_positional_tracking(positional_tracking_parameters)
+    # positional_tracking_parameters = sl.PositionalTrackingParameters()
+    # # If the camera is static, uncomment the following line to have better performances and boxes sticked to the ground.
+    # # positional_tracking_parameters.set_as_static = True
+    # zed.enable_positional_tracking(positional_tracking_parameters)
 
     obj_param = sl.ObjectDetectionParameters()
     obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.CUSTOM_BOX_OBJECTS
-    obj_param.enable_tracking = True
+    obj_param.enable_tracking = False
     zed.enable_object_detection(obj_param)
 
     objects = sl.Objects()
@@ -208,11 +208,8 @@ def main():
     cam_w_pose = sl.Pose()
 
     # Store the bounding box info
-    detection = Detection()
-    detection.header.frame_id = 'odom'
-    detection.header.seq = 10
     rospy.init_node('bounding_box', anonymous=True)
-    rate = rospy.Rate(1)
+    rate = rospy.Rate(10)
 
     while viewer.is_available() and not exit_signal:
         if zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
@@ -220,6 +217,10 @@ def main():
             lock.acquire()
             zed.retrieve_image(image_left_tmp, sl.VIEW.LEFT)
             image_net = image_left_tmp.get_data()
+            bbox = BBox3d()
+            detection = Detection()
+            detection.header.frame_id = 'base_link'
+            detection.header.seq = 10
             lock.release()
             run_signal = True
 
@@ -236,19 +237,21 @@ def main():
 
             # Retrieve the object information
             for object in objects.object_list:
-                bbox = BBox3d()
-                point_a = object.bounding_box[4]
-                point_b = object.bounding_box[7]
-                dx = point_a[0] - point_b[0]
-                dy = point_a[2] - point_b[2]
-                yaw = np.arctan2(dx, dy)
+                print(object.bounding_box)
+                if len(object.bounding_box) > 0:
+                    point_a = object.bounding_box[4, :]
+                    point_b = object.bounding_box[7, :]
+                    dx = point_a[0] - point_b[0]
+                    dy = point_a[2] - point_b[2]
+                    yaw = np.arctan2(dx, dy)
 
-                bbox.x1, bbox.y1 = point_a[0], point_a[1]
-                bbox.x2, bbox.y2 = object.bounding_box[6][0], object.bounding_box[6][1]
-                bbox.width, bbox.length = object.dimensions[0], object.dimensions[2]
-                bbox.yaw = yaw
-                detection.header.stamp = rospy.get_rostime()
-                detection.bbox_3d.append(bbox)
+                    bbox.x_center, bbox.y_center = (point_a[0]+point_b[0])/2, (point_a[1]+point_b[1])/2
+                    bbox.width, bbox.length = object.dimensions[0], object.dimensions[2]
+                    bbox.yaw = yaw
+                    detection.header.stamp = rospy.get_rostime()
+                    detection.bbox_3d.append(bbox)
+                else:
+                    pass
 
             # Publish the 3d bounding box
             pose_pub = rospy.Publisher('bounding_box', Detection, queue_size=10)
