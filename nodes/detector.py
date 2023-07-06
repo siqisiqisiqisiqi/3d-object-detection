@@ -152,7 +152,7 @@ def main():
     init_params = sl.InitParameters(input_t=input_type, svo_real_time_mode=True)
     init_params.coordinate_units = sl.UNIT.METER
     init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # QUALITY
-    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
+    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Z_UP
     init_params.depth_maximum_distance = 50
 
     runtime_params = sl.RuntimeParameters()
@@ -241,8 +241,8 @@ def main():
                 if len(object.bounding_box) > 0:
                     point_a = object.bounding_box[4, :]
                     point_b = object.bounding_box[7, :]
-                    dx = point_a[0] - point_b[0]
-                    dy = point_a[2] - point_b[2]
+                    dx = point_b[0] - point_a[0]
+                    dy = point_b[2] - point_a[2]
                     yaw = np.arctan2(dx, dy)
 
                     bbox.x_center, bbox.y_center = (point_a[0]+point_b[0])/2, (point_a[1]+point_b[1])/2
