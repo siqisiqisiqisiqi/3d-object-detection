@@ -1,0 +1,4 @@
+<launch>
+    <node name="bounding_box" pkg="object_detection" type="detect_test.py" output="screen">
+    </node>
+</launch>

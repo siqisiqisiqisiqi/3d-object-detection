@@ -8,10 +8,10 @@ sys.path.insert(1, f'{parent}/src/yolov5')
 sys.path.insert(1, f'{parent}/src')
 sys.path.insert(1, parent)
 
+from collections import namedtuple
 import numpy as np
 import rospy
 from object_detection.msg import BBox3d, Detection
-import argparse
 import torch
 import cv2
 import pyzed.sl as sl
@@ -26,13 +26,13 @@ from src.yolov5.utils.augmentations import letterbox
 from threading import Lock, Thread
 from time import sleep
 
-import src.ogl_viewer.viewer as gl
 import src.ogl_viewer.viewer2d as gl2
 import src.cv_viewer.tracking_viewer as cv_viewer
 
 lock = Lock()
 run_signal = False
 exit_signal = False
+param = namedtuple("param","weights, svo, img_size, conf_thres")
 
 
 def img_preprocess(img, device, half, net_size):
@@ -168,10 +168,10 @@ def main():
 
     print("Initialized Camera")
 
-    # positional_tracking_parameters = sl.PositionalTrackingParameters()
+    positional_tracking_parameters = sl.PositionalTrackingParameters()
     # # If the camera is static, uncomment the following line to have better performances and boxes sticked to the ground.
     # # positional_tracking_parameters.set_as_static = True
-    # zed.enable_positional_tracking(positional_tracking_parameters)
+    zed.enable_positional_tracking(positional_tracking_parameters)
 
     obj_param = sl.ObjectDetectionParameters()
     obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.CUSTOM_BOX_OBJECTS
@@ -185,11 +185,9 @@ def main():
     camera_infos = zed.get_camera_information()
     camera_res = camera_infos.camera_configuration.resolution
     # Create OpenGL viewer
-    # viewer = gl.GLViewer()
     viewer = gl2.GLViewer()
     point_cloud_res = sl.Resolution(min(camera_res.width, 720), min(camera_res.height, 404))
     point_cloud_render = sl.Mat()
-    # viewer.init(camera_infos.camera_model, point_cloud_res, obj_param.enable_tracking)
     viewer.init(camera_infos.camera_configuration.calibration_parameters.left_cam, obj_param.enable_tracking)
     
     point_cloud = sl.Mat(point_cloud_res.width, point_cloud_res.height, sl.MAT_TYPE.F32_C4, sl.MEM.CPU)
@@ -239,13 +237,12 @@ def main():
 
             # Retrieve the object information
             for object in objects.object_list:
-                print(object.bounding_box)
                 if len(object.bounding_box) > 0:
                     point_a = object.bounding_box[4, :]
                     point_b = object.bounding_box[7, :]
                     dx = point_b[0] - point_a[0]
                     dy = point_b[2] - point_a[2]
-                    yaw = np.arctan2(dx, dy)
+                    yaw = np.arctan2(dy, dx)
 
                     bbox.x_center, bbox.y_center = (point_a[0]+point_b[0])/2, (point_a[1]+point_b[1])/2
                     bbox.width, bbox.length = object.dimensions[0], object.dimensions[2]
@@ -268,7 +265,6 @@ def main():
             zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)
 
             # 3D rendering
-            # viewer.updateData(point_cloud_render, objects)
             viewer.update_view(image_left_tmp, objects)
             # 2D rendering
             np.copyto(image_left_ocv, image_left.get_data())
@@ -290,15 +286,6 @@ def main():
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=f'{parent}/src/weights/best2.pt',
-                        help='model.pt path(s)')
-    # parser.add_argument('--weights', nargs='+', type=str, default='./weights/yolov5s.pt', help='model.pt path(s)')
-    # parser.add_argument('--svo', type=str, default="../svo_data/j-turn_obstacle_avoidance.svo", help='optional svo file')
-    parser.add_argument('--svo', type=str, default=None, help='optional svo file')
-    parser.add_argument('--img_size', type=int, default=416, help='inference size (pixels)')
-    parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
-    opt = parser.parse_args()
-
+    opt = param(f'{parent}/src/weights/best2.pt', None, 416, 0.2)
     with torch.no_grad():
         main()
