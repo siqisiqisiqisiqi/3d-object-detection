@@ -1,4 +1,6 @@
 <launch>
+    <arg name="sim" default="True" />
     <node name="bounding_box" pkg="object_detection" type="detect_test.py" output="screen">
+        <param name="~sim" value="$(arg sim)"/>
     </node>
 </launch>

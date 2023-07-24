@@ -4,15 +4,17 @@ import sys
 import os
 
 current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.insert(1, f'{parent}/src/yolov5')
-sys.path.insert(1, f'{parent}/src')
-sys.path.insert(1, parent)
+root = os.path.dirname(current)
+parent = os.path.dirname(root)
+sys.path.insert(1, f'{root}/src/yolov5')
+sys.path.insert(1, f'{root}/src')
+sys.path.insert(1, root)
 
 import rospy
 import torch
 import numpy as np
 import pyzed.sl as sl
+from std_msgs.msg import String
 from collections import namedtuple
 import torch.backends.cudnn as cudnn
 from src.yolov5.models.experimental import attempt_load
@@ -139,18 +141,27 @@ class CustomThread(threading.Thread):
 
 
 class DetectionNode:
-    def __init__(self, opt):
+    def __init__(self):
+
         rospy.init_node('bounding_box', anonymous=True)
         rospy.on_shutdown(self.shutdown)
 
+        self.sim = rospy.get_param("~sim")
+        if self.sim == True:
+            self.opt = param(f'{root}/src/weights/best2.pt', f'{parent}/svo_data/test1.svo', 416, 0.2)
+        else:
+            self.opt = param(f'{root}/src/weights/best2.pt', None, 416, 0.2)
+
+
         # start the keyboard detection
-        self.capture_thread = CustomThread(opt)
+        self.capture_thread = CustomThread(self.opt)
         self.capture_thread.start()
 
         # Init the detection node
         self.detection_msg = Detection()
         
         self.bbox_pub = rospy.Publisher('obstacle', Detection, queue_size=10)
+        self.sim_pub = rospy.Publisher('status', String, queue_size = 10)
         self.rate = rospy.Rate(10)
 
     def detect_obstacle(self):
@@ -158,8 +169,8 @@ class DetectionNode:
         rospy.loginfo(f"Initializing Camera...")
         zed = sl.Camera()
         input_type = sl.InputType()
-        if opt.svo is not None:
-            input_type.set_from_svo_file(opt.svo)
+        if self.opt.svo is not None:
+            input_type.set_from_svo_file(self.opt.svo)
             # Create a InitParameters object and set configuration parameters
         init_params = sl.InitParameters(input_t=input_type, svo_real_time_mode=True)
         init_params.coordinate_units = sl.UNIT.METER
@@ -192,6 +203,7 @@ class DetectionNode:
         detection.header.frame_id = 'base_link'
         detection.header.seq = 10
 
+        rospy.loginfo("finish the initialization")
         while not rospy.is_shutdown():
             while not self.capture_thread.exit_signal:
                 if zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
@@ -230,7 +242,10 @@ class DetectionNode:
                         else:
                             pass
                     # rospy.loginfo(f"object list is {object_list}")
+                    rospy.loginfo("finish the object detection")
                     self.bbox_pub.publish(detection)
+                    self.sim_pub.publish('Done')
+                    # rospy.loginfo("successfully publish the detection info")
                     self.rate.sleep()
 
                 else:
@@ -242,9 +257,9 @@ class DetectionNode:
 
 
 if __name__ == '__main__':
-    opt = param(f'{parent}/src/weights/best2.pt', None, 416, 0.2)
+
     try:
-        node = DetectionNode(opt)
+        node = DetectionNode()
         node.detect_obstacle()
     except rospy.ROSInterruptException:
         pass

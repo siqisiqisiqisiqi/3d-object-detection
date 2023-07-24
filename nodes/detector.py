@@ -285,5 +285,6 @@ def main():
 
 if __name__ == '__main__':
     opt = param(f'{parent}/src/weights/best2.pt', None, 416, 0.2)
+    # opt = param(f'{root}/src/weights/best2.pt', f'{parent}/svo_data/u-turn_obstacle_avoidance.svo', 416, 0.2)
     with torch.no_grad():
         main()
