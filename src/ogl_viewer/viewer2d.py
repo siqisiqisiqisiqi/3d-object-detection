@@ -618,13 +618,13 @@ class GLViewer:
 
     def create_bbox_rendering(self, _bbox, _bbox_clr):
         # First create top and bottom full edges
-	    self.BBox_edges.add_full_edges(_bbox, _bbox_clr)
-	    # Add faded vertical edges
-	    self.BBox_edges.add_vertical_edges(_bbox, _bbox_clr)
-	    # Add faces
-	    self.BBox_faces.add_vertical_faces(_bbox, _bbox_clr)
-	    # Add top face
-	    self.BBox_faces.add_top_face(_bbox, _bbox_clr)
+        self.BBox_edges.add_full_edges(_bbox, _bbox_clr)
+        # Add faded vertical edges
+        self.BBox_edges.add_vertical_edges(_bbox, _bbox_clr)
+        # Add faces
+        self.BBox_faces.add_vertical_faces(_bbox, _bbox_clr)
+        # Add top face
+        self.BBox_faces.add_top_face(_bbox, _bbox_clr)
 
     def create_id_rendering(self, _center, _clr, _id):
         tmp = ObjectClassName()
@@ -658,7 +658,7 @@ class GLViewer:
             self.mutex.acquire()
             self.update()
             self.draw()
-            self.print_text()
+            # self.print_text()
             self.mutex.release()
 
             glutSwapBuffers()
@@ -677,21 +677,21 @@ class GLViewer:
         self.BBox_faces.draw()
         glUseProgram(0)
 
-    def print_text(self):
-        glDisable(GL_BLEND)
+    # def print_text(self):
+    #     glDisable(GL_BLEND)
 
-        wnd_size = sl.Resolution()
-        wnd_size.width = glutGet(GLUT_WINDOW_WIDTH)
-        wnd_size.height = glutGet(GLUT_WINDOW_HEIGHT)
+    #     wnd_size = sl.Resolution()
+    #     wnd_size.width = glutGet(GLUT_WINDOW_WIDTH)
+    #     wnd_size.height = glutGet(GLUT_WINDOW_HEIGHT)
 
-        if len(self.objects_name) > 0:
-            for obj in self.objects_name:
-                pt2d = self.compute_3D_projection(obj.position, self.projection, wnd_size)
-                glColor4f(obj.color[0], obj.color[1], obj.color[2], obj.color[3])
-                glWindowPos2f(pt2d[0], pt2d[1])
-                for i in range(len(obj.name)):
-                    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ctypes.c_int(ord(obj.name[i])))
-            glEnable(GL_BLEND)
+    #     if len(self.objects_name) > 0:
+    #         for obj in self.objects_name:
+    #             pt2d = self.compute_3D_projection(obj.position, self.projection, wnd_size)
+    #             glColor4f(obj.color[0], obj.color[1], obj.color[2], obj.color[3])
+    #             glWindowPos2f(pt2d[0], pt2d[1])
+    #             for i in range(len(obj.name)):
+    #                 glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ctypes.c_int(ord(obj.name[i])))
+    #         glEnable(GL_BLEND)
 
     def compute_3D_projection(self, _pt, _cam, _wnd_size):
         pt4d = np.array([_pt[0],_pt[1],_pt[2], 1], np.float32)

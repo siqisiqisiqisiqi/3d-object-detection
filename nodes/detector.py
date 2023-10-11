@@ -4,6 +4,7 @@ import sys
 import os
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
+root = os.path.dirname(parent)
 sys.path.insert(1, f'{parent}/src/yolov5')
 sys.path.insert(1, f'{parent}/src')
 sys.path.insert(1, parent)
@@ -286,7 +287,7 @@ def main():
 
 
 if __name__ == '__main__':
-    opt = param(f'{parent}/src/weights/best2.pt', None, 416, 0.2)
-    # opt = param(f'{root}/src/weights/best2.pt', f'{parent}/svo_data/u-turn_obstacle_avoidance.svo', 416, 0.2)
+    opt = param(f'{parent}/src/weights/peach.pt', None, 416, 0.2)
+    # opt = param(f'{parent}/src/weights/best2.pt', f'{root}/svo_data/test1.svo', 416, 0.2)
     with torch.no_grad():
         main()
